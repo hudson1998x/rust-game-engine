@@ -72,6 +72,20 @@ impl Camera {
         instance.frustum = Some(Frustum::new(&instance));
         instance
     }
+
+    /// Updates the object's position and marks it dirty for recalculation.
+    ///
+    /// `pos` is the new position vector [x, y, z].
+    pub fn set_position(&mut self, pos: [f32; 3]) {
+        self.position = pos;
+    }
+
+    /// Updates the object's rotation quaternion and marks it dirty.
+    ///
+    /// `rot` is the new quaternion [x, y, z, w].
+    pub fn set_rotation(&mut self, rot: [f32; 4]) {
+        self.rotation = rot;
+    }
     
     /// Sets the camera's Near & Far ranges
     pub fn set_near_far(&mut self, near: f32, far: f32) {
