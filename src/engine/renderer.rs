@@ -10,6 +10,8 @@ use glutin::{
 };
 use gl;
 use std::{rc::Rc, cell::RefCell};
+use crate::engine::camera::Camera;
+use crate::engine::object3d::{GLMesh, Object3D};
 
 /// `Renderer` encapsulates the OpenGL rendering context,
 /// window creation, event handling loop, and basic rendering operations.
@@ -51,6 +53,12 @@ pub struct Renderer {
 
     /// The color used to clear the OpenGL framebuffer each frame, stored as RGBA floats.
     clear_color: [f32; 4],
+
+    /// what camera are we rendering from?
+    camera: Option<Camera>,
+
+    /// What scene are we rendering?
+    scene: Option<Object3D>
 }
 
 impl Renderer {
@@ -105,6 +113,8 @@ impl Renderer {
             event_loop,
             windowed_context,
             clear_color,
+            camera: None,
+            scene: None,
         }
     }
 
@@ -172,44 +182,48 @@ impl Renderer {
     /// - On each redraw event, clears and swaps buffers to update the screen.
     /// - Requests redraw on every iteration to keep the rendering loop alive.
     pub fn run(self) {
-        // Destructure to take ownership of fields for the event loop closure
         let Renderer {
             event_loop,
             windowed_context,
             clear_color: _,
+            camera,
+            scene,
         } = self;
 
-        // Wrap the windowed context in Rc<RefCell> for shared mutable access inside the closure
         let context = Rc::new(RefCell::new(windowed_context));
+        let camera = Rc::new(RefCell::new(camera));
+        let scene = Rc::new(RefCell::new(scene));
 
-        // Start the event loop which drives the application lifecycle
         event_loop.run(move |event, _, control_flow| {
-            // Wait for new events instead of busy looping (conserves CPU)
             *control_flow = ControlFlow::Wait;
 
             match event {
-                // Handle window close request event
                 Event::WindowEvent { event, .. } => match event {
                     WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-                    _ => (),
+                    _ => {}
                 },
 
-                // On redraw request, clear the screen and present the frame
                 Event::RedrawRequested(_) => {
                     unsafe {
                         gl::Clear(gl::COLOR_BUFFER_BIT);
                     }
+
+                    let cam_ref = camera.borrow();
+                    let mut scene_ref = scene.borrow_mut();
+
+                    if let (Some(cam), Some(scene)) = (&*cam_ref, &mut *scene_ref) {
+                        scene.draw(cam);
+                    }
+
                     context.borrow().swap_buffers().unwrap();
                 }
 
-                // Ignore other events
-                _ => (),
+                _ => {}
             }
 
-            // Request a redraw each event loop iteration to animate continuously
-            let window_ref = context.borrow();
-            let window = window_ref.window();
-            window.request_redraw();
+            // Continuously redraw at vsync rate
+            context.borrow().window().request_redraw();
         });
     }
+
 }
