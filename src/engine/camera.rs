@@ -43,8 +43,6 @@ pub struct Camera {
 
     /// Distance to the far clipping plane.
     pub far: f32,
-    
-    pub frustum: Option<Frustum>,
 }
 
 impl Camera {
@@ -59,18 +57,14 @@ impl Camera {
     /// # Parameters
     /// - `aspect`: Width-to-height ratio of the viewport.
     pub fn new(aspect: f32) -> Self {
-        let mut instance = Self {
+        Self {
             position: [0.0, 0.0, 5.0],
             rotation: [0.0, 0.0, 0.0, 1.0],
             fov_y: 60.0_f32.to_radians(),
             aspect,
             near: 0.1,
-            far: 100.0,
-            frustum: None,
-        };
-
-        instance.frustum = Some(Frustum::new(&instance));
-        instance
+            far: 100.0
+        }
     }
 
     /// Updates the object's position and marks it dirty for recalculation.
@@ -86,13 +80,13 @@ impl Camera {
     pub fn set_rotation(&mut self, rot: [f32; 4]) {
         self.rotation = rot;
     }
-    
+
     /// Sets the camera's Near & Far ranges
     pub fn set_near_far(&mut self, near: f32, far: f32) {
         self.near = near;
         self.far = far;
     }
-    
+
     /// Sets the camera's FOV
     pub fn set_fov(&mut self, fov: f32) {
         self.fov_y = fov.to_radians();
@@ -129,40 +123,6 @@ impl Camera {
     pub fn proj_view_matrix(&self) -> [f32; 16] {
         matrix_mul_4x4(&self.projection_matrix(), &self.view_matrix())
     }
-}
-
-/// A simple frustum structure used to test object visibility against the camera's view.
-///
-/// This implementation uses a basic bounding-sphere check for visibility against the Z clip planes
-/// in clip space. It is intended as a minimal and fast early-out before full rasterization.
-///
-/// # Limitations
-/// - Only Z (depth) is tested — no XY/side planes.
-/// - Designed for use in conjunction with a perspective `Camera`.
-///
-/// This is sufficient for scenes where objects are mostly in front of the camera, or as a first pass.
-///
-/// # Example
-/// ```
-/// let camera = Camera::new(16.0 / 9.0);
-/// let frustum = Frustum::new(&camera);
-/// if frustum.intersects_sphere([0.0, 0.0, 0.0], 1.0) {
-///     println!("Visible!");
-/// }
-/// ```
-#[derive(Debug, Clone)]
-pub struct Frustum {
-    /// Combined projection * view matrix used to test visibility.
-    pub proj_view: [f32; 16],
-}
-
-impl Frustum {
-    /// Constructs a new frustum based on the camera's current view.
-    pub fn new(camera: &Camera) -> Self {
-        Self {
-            proj_view: camera.proj_view_matrix(),
-        }
-    }
 
     /// Performs a simple bounding-sphere culling test in clip space.
     ///
@@ -176,7 +136,7 @@ impl Frustum {
     /// # Returns
     /// `true` if the object may be visible; `false` if it is fully outside the Z frustum.
     pub fn intersects_sphere(&self, world_pos: [f32; 3], radius: f32) -> bool {
-        let m = &self.proj_view;
+        let m = &self.proj_view_matrix();
         let clip_z =
             m[2] * world_pos[0] +
                 m[6] * world_pos[1] +

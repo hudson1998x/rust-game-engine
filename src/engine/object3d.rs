@@ -1,7 +1,7 @@
 use std::{rc::{Rc, Weak}, cell::RefCell};
 use std::cell::OnceCell;
 use gl::{self, types::*};
-use crate::engine::camera::{Camera, Frustum};
+use crate::engine::camera::{Camera};
 use crate::engine::math::matrixfuncs::{compute_local_matrix, matrix_mul_4x4};
 use crate::engine::shader::GLShaderProgram;
 
@@ -226,12 +226,7 @@ impl Object3D {
             world_matrix[14],
         ];
 
-        let mut visible = false;
-        
-        if let Some(ref frustum) = camera.frustum {
-            visible = frustum.intersects_sphere(world_pos, 1.0);   
-        }
-        if !visible {
+        if !camera.intersects_sphere(world_pos, 1.0f32) {
             return; // skip drawing this object and its children
         }
 
