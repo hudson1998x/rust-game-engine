@@ -1,0 +1,8 @@
+[package]
+name = "rustge"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+glutin = "0.29"       # For window and OpenGL context
+gl = "0.14.0"           # For OpenGL function loading
