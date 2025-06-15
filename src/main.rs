@@ -1,5 +1,6 @@
 use crate::engine::renderer::Renderer;
 use crate::engine::camera::Camera;
+use crate::engine::object3d::Object3D;
 
 mod engine;
 
@@ -11,6 +12,8 @@ fn main() {
     camera.set_fov(90f32);
     camera.set_near_far(0.01, 1000.00);
     
+    
+    renderer.set_camera(camera);
     
     
     renderer.run();  // handles everything, blocking until the window closes

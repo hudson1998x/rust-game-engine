@@ -10,6 +10,7 @@ use glutin::{
 };
 use gl;
 use std::{rc::Rc, cell::RefCell};
+use std::cell::RefMut;
 use crate::engine::camera::Camera;
 use crate::engine::object3d::{GLMesh, Object3D};
 
@@ -109,14 +110,74 @@ impl Renderer {
             gl::ClearColor(clear_color[0], clear_color[1], clear_color[2], clear_color[3]);
         }
 
-        Self {
+        let mut instance: Self = Self {
             event_loop,
             windowed_context,
             clear_color,
             camera: None,
             scene: None,
-        }
+        };
+
+        let obj_rc = Object3D::new();
+        let obj_raw = Rc::try_unwrap(obj_rc)
+            .expect("Object3D::new() should be uniquely owned")
+            .into_inner();
+
+        instance.set_scene(obj_raw);
+        
+        
+        instance
     }
+
+    /// Sets the camera to be used for rendering the scene.
+    ///
+    /// This method replaces the current camera with the provided one. The camera
+    /// defines the viewpoint and projection parameters used to render the 3D scene.
+    ///
+    /// # Parameters
+    /// - `camera`: The `Camera` instance to use for rendering.
+    ///
+    /// # Behavior
+    /// - Assigns the provided camera to the renderer.
+    /// - If no camera was previously set, this initializes the rendering viewpoint.
+    /// - The camera will be used on the next render cycle in the event loop.
+    ///
+    /// # Example
+    /// ```no_run
+    /// let camera = Camera::new(...);
+    /// renderer.set_camera(camera);
+    /// ```
+    pub fn set_camera(&mut self, camera: Camera) {
+        self.camera = Some(camera);
+    }
+
+    /// Sets the 3D scene (root object) to be rendered.
+    ///
+    /// This method assigns the root `Object3D` representing the scene graph to render.
+    /// The scene typically contains meshes, transformations, and child objects. Updating
+    /// the scene here will change what is drawn each frame.
+    ///
+    /// # Parameters
+    /// - `scene`: The root `Object3D` of the scene graph to render.
+    ///
+    /// # Behavior
+    /// - Stores the scene object inside the renderer.
+    /// - The scene will be drawn from the active camera's perspective during rendering.
+    /// - Replacing the scene allows dynamic changes to what is displayed.
+    ///
+    /// # Example
+    /// ```no_run
+    /// let scene_root = Object3D::new(...);
+    /// renderer.set_scene(scene_root);
+    /// ```
+    pub fn set_scene(&mut self, scene: Object3D) {
+        self.scene = Some(scene);
+    }
+
+    pub fn get_scene(&self) -> Option<&Object3D> {
+        self.scene.as_ref()
+    }
+
 
     /// Clears the current OpenGL framebuffer using the stored clear color.
     ///
